@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: eventra-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CASHFREE_APP_ID
+        sync: false
+      - key: CASHFREE_SECRET_KEY
+        sync: false
+      - key: CASHFREE_ENV
+        value: sandbox
+      - key: CASHFREE_API_VERSION
+        value: "2025-01-01"
+      - key: CASHFREE_WEBHOOK_SECRET
+        sync: false
+      - key: QR_SIGNING_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: APP_BASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: "Eventra <tickets@eventra.app>"
+
