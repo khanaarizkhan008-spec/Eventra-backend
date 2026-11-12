@@ -73,7 +73,8 @@ export async function confirmVerifiedPaidOrder(
 
   if (confirmResult?.ok && !confirmResult.idempotent) {
     const appBaseUrl = resolveAppBaseUrl();
-    await sendTransactionalEmail(adminClient, {
+    // Fire email dispatch asynchronously so ticket issuance returns immediately
+    void sendTransactionalEmail(adminClient, {
       to: confirmResult.participant_email,
       subject: `Payment Confirmed & Ticket Issued — ${confirmResult.event_title}`,
       eventType: "payment_confirmed",
@@ -85,7 +86,7 @@ export async function confirmVerifiedPaidOrder(
         ticketUrl: `${appBaseUrl}/tickets/${confirmResult.ticket_id}`,
         amountLabel: `₹${Number(paymentAmount).toFixed(2)}`,
       }),
-    });
+    }).catch(() => {});
   }
 
   return { result: confirmResult as ConfirmPaidOrderResult };

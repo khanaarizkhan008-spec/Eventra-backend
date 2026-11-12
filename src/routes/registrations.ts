@@ -73,7 +73,8 @@ registrationsRouter.post(
     }
 
     const appBaseUrl = resolveAppBaseUrl();
-    await sendTransactionalEmail(adminClient, {
+    // Dispatch confirmation email in background so the user navigates to their pass immediately
+    void sendTransactionalEmail(adminClient, {
       to: participantEmail,
       subject: `Your Eventra Pass — ${data.event_title}`,
       eventType: "ticket_issued",
@@ -85,7 +86,7 @@ registrationsRouter.post(
         ticketUrl: `${appBaseUrl}/tickets/${data.ticket_id}`,
         amountLabel: "FREE (₹0)",
       }),
-    });
+    }).catch(() => {});
 
     return res.json({
       ok: true,

@@ -117,7 +117,49 @@ paymentsRouter.post(
     }
 
     if (pendingPayment || cfOrder.order_status === "ACTIVE") {
-      if (pendingPayment && paymentRow.status !== "PENDING") {
+      if (reg.status === "expired") {
+        if (paymentRow.status !== "FAILED") {
+          await adminClient
+            .from("payments")
+            .update({
+              status: "FAILED",
+              provider_payment_id: latestPayment
+                ? String(latestPayment.cf_payment_id)
+                : paymentRow.provider_payment_id,
+              status_history: [
+                ...(Array.isArray(paymentRow.status_history)
+                  ? paymentRow.status_history
+                  : []),
+                {
+                  from: paymentRow.status,
+                  to: "FAILED",
+                  reason: "Reservation hold expired before payment completion",
+                  at: new Date().toISOString(),
+                },
+              ],
+            })
+            .eq("id", paymentRow.id);
+
+          await adminClient
+            .from("registrations")
+            .update({ payment_status: "FAILED" })
+            .eq("id", reg.id);
+        }
+
+        return res.json({
+          ok: true,
+          status: "FAILED",
+          registrationStatus: "expired",
+          orderId,
+          registrationId: reg.id,
+          cashfreeOrderStatus: cfOrder.order_status,
+          cashfreePaymentStatus: latestPayment?.payment_status ?? null,
+          message:
+            "Seat reservation expired before Cashfree confirmed the payment. Please register again to start a fresh checkout.",
+        });
+      }
+
+      if (pendingPayment && paymentRow.status === "CREATED") {
         await adminClient
           .from("payments")
           .update({
@@ -152,7 +194,11 @@ paymentsRouter.post(
         registrationStatus: reg.status,
         orderId,
         registrationId: reg.id,
-        message: "Payment is still awaiting confirmation from Cashfree.",
+        cashfreeOrderStatus: cfOrder.order_status,
+        cashfreePaymentStatus: latestPayment?.payment_status ?? null,
+        message: pendingPayment
+          ? "Payment is still awaiting confirmation from Cashfree."
+          : "Order is active and awaiting payment completion in Cashfree.",
       });
     }
 

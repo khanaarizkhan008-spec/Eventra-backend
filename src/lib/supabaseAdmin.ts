@@ -33,6 +33,8 @@ export function isPlaceholderEnv(value: string | undefined): boolean {
   );
 }
 
+let cachedAdmin: { url: string; key: string; client: SupabaseClient } | null = null;
+
 export function getSupabaseAdmin(): SupabaseClient {
   const url = process.env.SUPABASE_URL?.trim();
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -43,12 +45,18 @@ export function getSupabaseAdmin(): SupabaseClient {
     );
   }
 
-  return createClient(url!, serviceKey!, {
+  if (cachedAdmin && cachedAdmin.url === url && cachedAdmin.key === serviceKey) {
+    return cachedAdmin.client;
+  }
+
+  const client = createClient(url!, serviceKey!, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
     },
   });
+  cachedAdmin = { url: url!, key: serviceKey!, client };
+  return client;
 }
 
 /** Extracts Bearer JWT from request headers, verifies it via Supabase Auth, and resolves the non-suspended profile. */
